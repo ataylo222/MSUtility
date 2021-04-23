@@ -53,13 +53,16 @@ public:
     void getStateInformation(juce::MemoryBlock& destData) override;
     void setStateInformation(const void* data, int sizeInBytes) override;
 
+    //this section allows for the PluginProcessor.cpp to access the parameters set and also commits them to memory for access by DAWS etc.
     juce::AudioParameterFloat* stereoWidth;
     juce::AudioParameterChoice* inputSelection;
     juce::AudioParameterChoice* outputSelection;
 
-    float SWidth;
+    float StereoWidth;
     int InputSelection;
     int OutputSelection;
+    int channelDataL;
+    int channelDataR;
 
 private:
     //==============================================================================

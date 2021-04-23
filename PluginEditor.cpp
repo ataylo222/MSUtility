@@ -16,6 +16,9 @@ MSUtilityAudioProcessorEditor::MSUtilityAudioProcessorEditor (MSUtilityAudioProc
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
     setSize (400, 300);
+
+   
+
 }
 
 MSUtilityAudioProcessorEditor::~MSUtilityAudioProcessorEditor()

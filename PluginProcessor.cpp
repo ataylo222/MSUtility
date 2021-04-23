@@ -22,13 +22,20 @@ MSUtilityAudioProcessor::MSUtilityAudioProcessor()
     )
 #endif
 {
-    //Adds Parameters to the AudioProcessor
+    //Adds Parameters to the AudioProcessor-These parameters are stored in getStateInformation section.
+
+    //stereo widener control with a range of 2 as required from the brief.
     stereoWidth = new juce::AudioParameterFloat("StereoWidth", "Stereo Width", 0.0f, 2.0f, 1.0f);
     addParameter(stereoWidth);
+
+    //input selection control-creating the options for both stereo and midside
     inputSelection = new juce::AudioParameterChoice("inputSelection", "Input Selection", { "Stereo", "MidSide" }, 1);
     addParameter(inputSelection);
+
+    //output selection control-creating the options for both stereo and midside
     outputSelection = new juce::AudioParameterChoice("outputSelection", "Output Selection", { "Stereo", "MidSide" }, 1);
     addParameter(outputSelection);
+   
 }
 
 MSUtilityAudioProcessor::~MSUtilityAudioProcessor()
@@ -164,13 +171,17 @@ void MSUtilityAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
     for (int i = 0;i < buffer.getNumSamples(); ++i)
 
     {
+
+        //get the value of current parameters
         float StereoWidth = stereoWidth->get();
         int InputSelection = inputSelection->getIndex();
         int OutputSelection = outputSelection->getIndex();
 
+        //creates variable for both mid and side components for encoding, decoding and stereo widening 
         float mid;
         float side;
         {
+          
             if (inputSelection == 0 && outputSelection == 0) // ***stereo in and stereo out 
             {
                 //Stereo To Midside Encoding
@@ -187,21 +198,96 @@ void MSUtilityAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juc
 
             }
             else
+            
+                ////Stereo To Midside Encoding
+            side = 0.5f * (channelDataL[i] - channelDataR[i]);
+            mid = 0.5f * (channelDataL[i] + channelDataR[i]);
+
+            //Stereo Width Control
+            auto side = StereoWidth * (channelDataL[i] - channelDataR[i]);
+            auto mid = (2.0 - StereoWidth) * (channelDataL[i] + channelDataR[i]);
+            
+            if (inputSelection == 0 && outputSelection == 1) // ***stereo in and midside out 
+            { 
+                //Stereo To Midside Encoding
+                side = 0.5f * (channelDataL[i] - channelDataR[i]);
+                mid = 0.5f * (channelDataL[i] + channelDataR[i]);
+
+                //Stereo Width Control
+                auto side = StereoWidth * (channelDataL[i] - channelDataR[i]);
+                auto mid = (2.0 - StereoWidth) * (channelDataL[i] + channelDataR[i]);
+
+                //Midside to Stereo-Decoding 
+                auto channelDataL = (mid + side);
+                auto channelDataR = (mid - side);
+            }
+            else
+                //Stereo Width Control
+                auto side = StereoWidth * (channelDataL[i] - channelDataR[i]);
+            auto mid = (2.0 - StereoWidth) * (channelDataL[i] + channelDataR[i]);
+
+            //Midside to Stereo-Decoding 
+            auto channelDataL = (mid + side);
+            auto channelDataR = (mid - side);
+            
+            if (inputSelection == 1 && outputSelection == 1) // ***midside in and midside out 
+            {
+                //Stereo To Midside Encoding
+                side = 0.5f * (channelDataL[i] - channelDataR[i]);
+                mid = 0.5f * (channelDataL[i] + channelDataR[i]);
+
+                //Midside to Stereo-Decoding 
+                auto channelDataL = (mid + side);
+                auto channelDataR = (mid - side);
+            }
+            else
+                //Stereo To Midside Encoding
                 side = 0.5f * (channelDataL[i] - channelDataR[i]);
             mid = 0.5f * (channelDataL[i] + channelDataR[i]);
 
             //Stereo Width Control
             auto side = StereoWidth * (channelDataL[i] - channelDataR[i]);
             auto mid = (2.0 - StereoWidth) * (channelDataL[i] + channelDataR[i]);
+
+            //Midside to Stereo-Decoding 
+            auto channelDataL = (mid + side);
+            auto channelDataR = (mid - side);
+
+            if (inputSelection == 1 && outputSelection == 0) // ***midside in and stereo out 
             {
+                //Stereo To Midside Encoding
+                side = 0.5f * (channelDataL[i] - channelDataR[i]);
+                mid = 0.5f * (channelDataL[i] + channelDataR[i]);
+
+                //Stereo Width Control
+                auto side = StereoWidth * (channelDataL[i] - channelDataR[i]);
+                auto mid = (2.0 - StereoWidth) * (channelDataL[i] + channelDataR[i]);
+
+                //Midside to Stereo-Decoding 
+                auto channelDataL = (mid + side);
+                auto channelDataR = (mid - side);
+            }
+            else
+                //Stereo Width Control
+                auto side = StereoWidth * (channelDataL[i] - channelDataR[i]);
+            auto mid = (2.0 - StereoWidth) * (channelDataL[i] + channelDataR[i]);
+
+            //Midside to Stereo-Decoding 
+            auto channelDataL = (mid + side);
+            auto channelDataR = (mid - side);
 
             }
+                
+
+                
+            
 
 
 
-        }
+        
 
     }
+    
 
 
 
@@ -236,6 +322,7 @@ bool MSUtilityAudioProcessor::hasEditor() const
 {
     return true; // (change this to false if you choose to not supply an editor)
 }
+//generic processor method utilised 
 
 juce::AudioProcessorEditor* MSUtilityAudioProcessor::createEditor()
 {
@@ -245,11 +332,13 @@ juce::AudioProcessorEditor* MSUtilityAudioProcessor::createEditor()
 //==============================================================================
 void MSUtilityAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
-    float SWidth;
+    float StereoWidth;
     int InputSelection;
     int OutputSelection;
     float mid;
     float side;
+    int channelDataL; 
+    int channelDataR;
 
 
 
@@ -262,11 +351,13 @@ void MSUtilityAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
 
 void MSUtilityAudioProcessor::setStateInformation(const void* data, int sizeInBytes)
 {
-    float SWidth;
+    float StereoWidth;
     int InputSelection;
     int OutputSelection;
     float mid;
     float side;
+    int channelDataL;
+    int channelDataR;
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
 }
